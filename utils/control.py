@@ -1,6 +1,7 @@
 import torch
-from utils import *
 import threading
+import time
+from utils import *
 from PIL import Image, ImageTk
 from torchvision.transforms import ToPILImage
 
@@ -143,6 +144,7 @@ class Controller:
         image_label.image = photo
         
     def run_detection(self):
+        start_time = time.time()
         if self.ModelPath is None or self.ModelPath == "":
             self.ui.messagebox.showerror("错误", "请填写模型路径")
             return
@@ -219,11 +221,14 @@ class Controller:
 
             if not flag:
                 colorPrint("[-] 未检测出后门", "green")
-                self.ui.messagebox.showinfo("未发现后门", f"{output_info}\n可以查看控制台考虑增加最大检测轮数")
+                end_time = time.time()
+                spend_time = end_time - start_time
+                self.ui.messagebox.showinfo("未发现后门", f"耗时：{spend_time:.2f}s\n{output_info}\n可以查看控制台考虑增加最大检测轮数")
             else:
-                self.ui.messagebox.showwarning("发现后门！", f"检测完成,发现后门标签：{self.currentBackDoorlabel}")
+                end_time = time.time()
+                spend_time = end_time - start_time
+                self.ui.messagebox.showwarning("发现后门！", f"检测完成, 耗时：{spend_time:.2f}s\n发现后门标签：{self.currentBackDoorlabel}")
                 # start_GUI(processed_tensor, f"后门标签：{classes[sorted_indices[0].item()]}", "后门检测系统", model, dataset, master=self.ui)
-            
         except Exception as e:
             colorPrint(f"[-] 检测出异常：{e}", "red")
             self.ui.messagebox.showerror("错误", f"检测时发生了错误：{e}")
