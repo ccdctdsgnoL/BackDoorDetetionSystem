@@ -24,6 +24,7 @@ class Controller:
         self.CurrentTriggerIndex = 0  # 当前触发器索引
         self.currentBackDoorlabel = None  # 当前后门标签
         self.current_posion_prediction_results = None  # 当前毒化数据预测结果
+        self.IsAccelerate = False  # 是否加速
 
     
     def init(self, ui):
@@ -52,6 +53,7 @@ class Controller:
         self.CurrentTriggerImage = None
         self.CurrentTriggerIndex = 0
         self.currentBackDoorlabel = None
+        self.current_normal_prediction_results = None
         self.current_posion_prediction_results = None
         self.CurrentDataSetImage = None
         self.CurrentDatasetIndex = 0
@@ -79,7 +81,9 @@ class Controller:
         if self.CurrentDataSetImage is None:
             return
         self.show_image(self.ui.tk_label_DatasetImage, self.ui.tk_label_ShowDatasetImage,
-                        self.CurrentDataSetImage, self.CurrentDatasetIndex, self.current_posion_prediction_results)
+                        self.CurrentDataSetImage, self.CurrentDatasetIndex, 
+                        f"{self.dataset_classes[self.current_normal_prediction_results[self.CurrentDatasetIndex].item()]}->{self.dataset_classes[self.current_posion_prediction_results[self.CurrentDatasetIndex].item()]}"
+                        )
         
     def on_dataset_prvious(self, event):
         self.CurrentDatasetIndex -= 1
@@ -121,19 +125,6 @@ class Controller:
             image_array = tensor[current_index%pic_num]
         if type(info) == str:
             info_label.config(text=info)
-        elif type(info) == list:
-            if len(info) == pic_num:
-                info_label.config(text=self.dataset_classes[info[current_index]])
-            else:
-                info_label.config(text="传入数据错误")
-        elif isinstance(info, torch.Tensor):
-            if info.dim() > 0:
-                if len(info) == pic_num:
-                    info_label.config(text=self.dataset_classes[info[current_index].item()])
-                else:
-                    info_label.config(text="传入数据错误")
-            else:
-                info_label.config(text=info.item())
         image = self.to_pil(image_array)
         self.now_image = image
         min_pix = min(image_label.winfo_width(), image_label.winfo_height())
@@ -188,6 +179,7 @@ class Controller:
                 triggers = triggers.repeat(n, 1, 1, 1)
                 triggers = torch.index_select(triggers, 0, diff_indices)  # 影响到预测的后门样式
                 
+                self.current_normal_prediction_results = torch.index_select(normal_prediction_results, 0, diff_indices)
                 self.current_posion_prediction_results = torch.index_select(posion_prediction_results, 0, diff_indices)
                 self.CurrentDataSetImage = torch.index_select(poison_x, 0, diff_indices)
                 self.show_dataset_image()
@@ -210,14 +202,20 @@ class Controller:
                 colorPrint(f"[*] {info_str}", "blue")
                 self.ui.progress_value.set((epoch + 1)/maxEpoch*100)
                 self.ui.tk_label_Process.config(text=f"{self.ui.progress_value.get():.2f}%")
+                processed_tensor = process_triggers(triggers, self.IntervalAcc)  # 堆叠后的后门图像拆分出来
+                
                 if flag:
-                    processed_tensor = process_triggers(triggers, self.IntervalAcc)  # 堆叠后的后门图像拆分出来
+                    triggers = torch.cat((triggers, processed_tensor), dim=0)
+                    triggers = triggers[torch.randperm(triggers.size(0))]  # 随机打乱后门样式
                     colorPrint(f"[+] 检测到后门标签：{sorted_indices[0].item()}", "red")
                     self.currentBackDoorlabel = classes[sorted_indices[0].item()]
                     self.CurrentTriggerImage = processed_tensor
                     self.show_backdoor_image()
                     if self.IsEarlyStop:
                         break
+                elif self.IsAccelerate:
+                    triggers = torch.cat((triggers, processed_tensor), dim=0)
+                    triggers = triggers[torch.randperm(triggers.size(0))]  # 随机打乱后门样式
 
             if not flag:
                 colorPrint("[-] 未检测出后门", "green")

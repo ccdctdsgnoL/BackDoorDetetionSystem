@@ -198,17 +198,17 @@ class WinGUI(Tk):
 
     def __tk_label_DatasetImage(self, parent):
         label = Label(parent, text="数据集图片", anchor="center", )
-        label.place(relx=0.2062, rely=0.0000, relwidth=0.0875, relheight=0.0714)
+        label.place(relx=0.1500, rely=0.0000, relwidth=0.2000, relheight=0.0714)
         return label
 
     def __tk_button_DatasetPrvious(self, parent):
         btn = Button(parent, text="上一张", takefocus=False, )
-        btn.place(relx=0.1250, rely=0.0000, relwidth=0.0625, relheight=0.0714)
+        btn.place(relx=0.0750, rely=0.0000, relwidth=0.0625, relheight=0.0714)
         return btn
 
     def __tk_button_DatasetNext(self, parent):
         btn = Button(parent, text="下一张", takefocus=False, )
-        btn.place(relx=0.3125, rely=0.0000, relwidth=0.0625, relheight=0.0714)
+        btn.place(relx=0.3625, rely=0.0000, relwidth=0.0625, relheight=0.0714)
         return btn
 
     def __tk_button_BackDoorImgPrvious(self, parent):
