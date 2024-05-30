@@ -19,7 +19,9 @@ class WinGUI(Tk):
         self.tk_label_SelectDataset = self.__tk_label_SelectDataset(self.tk_frame_ModelConfig) 
         self.tk_select_box_SelectDataset = self.__tk_select_box_SelectDataset(self.tk_frame_ModelConfig) 
         self.tk_input_DatasetPath = self.__tk_input_DatasetPath(self.tk_frame_ModelConfig) 
-        self.tk_check_button_EarlyStop = self.__tk_check_button_EarlyStop(self.tk_frame_ModelConfig) 
+        self.tk_check_button_EarlyStop = self.__tk_check_button_EarlyStop(self.tk_frame_ModelConfig)
+        self.tk_label_IntervalAcc = self.__tk_label_IntervalAcc( self.tk_frame_ModelConfig) 
+        self.tk_input_IntervalAcc = self.__tk_input_IntervalAcc( self.tk_frame_ModelConfig)
         self.tk_label_frame_Output = self.__tk_label_frame_Output(self)
         self.tk_label_ShowBackDoorImage = self.__tk_label_ShowBackDoorImage(self.tk_label_frame_Output) 
         self.tk_label_BackDoorLabel = self.__tk_label_BackDoorLabel(self.tk_label_frame_Output) 
@@ -30,7 +32,8 @@ class WinGUI(Tk):
         self.tk_button_DatasetPrvious = self.__tk_button_DatasetPrvious(self.tk_label_frame_Output) 
         self.tk_button_DatasetNext = self.__tk_button_DatasetNext(self.tk_label_frame_Output) 
         self.tk_button_BackDoorImgPrvious = self.__tk_button_BackDoorImgPrvious(self.tk_label_frame_Output) 
-        self.tk_button_BackDoorImgNext = self.__tk_button_BackDoorImgNext(self.tk_label_frame_Output) 
+        self.tk_button_BackDoorImgNext = self.__tk_button_BackDoorImgNext(self.tk_label_frame_Output)
+        self.tk_button_Verify = self.__tk_button_Verify( self.tk_label_frame_Output)
         self.__set_defaults()
         self.tk_label_ShowDatasetImage.winfo_width()
 
@@ -38,6 +41,7 @@ class WinGUI(Tk):
         self.IsEarlyStop = BooleanVar(value=True)  # 是否提前停止
         self.Epochs = IntVar(value=10)  # 最大迭代次数
         self.progress_value = DoubleVar(value=0)  # 进度条值
+        self.IntervalAcc = DoubleVar(value=0.01)  # 间隔精度
     
     def __win(self):
         self.title("深度神经网络后门检测系统")
@@ -152,6 +156,16 @@ class WinGUI(Tk):
         cb.place(relx=0.0125, rely=0.7083, relwidth=0.1000, relheight=0.2500)
         return cb
 
+    def __tk_label_IntervalAcc(self, parent):
+        label = Label(parent,text="间隔精度：",anchor="center", )
+        label.place(relx=0.1250, rely=0.7083, relwidth=0.0750, relheight=0.2500)
+        return label
+    
+    def __tk_input_IntervalAcc(self, parent):
+        ipt = Entry(parent, textvariable=self.IntervalAcc, )
+        ipt.place(relx=0.2000, rely=0.7083, relwidth=0.0500, relheight=0.2500)
+        return ipt
+    
     def __tk_label_frame_Output(self, parent):
         frame = LabelFrame(parent, text="检测输出", )
         frame.place(relx=0.0000, rely=0.2364, relwidth=1.0000, relheight=0.7636)
@@ -207,6 +221,11 @@ class WinGUI(Tk):
         btn.place(relx=0.8500, rely=0.0000, relwidth=0.0625, relheight=0.0714)
         return btn
     
+    def __tk_button_Verify(self, parent):
+        btn = Button(parent, text="弹出", takefocus=False,)
+        btn.place(relx=0.9187, rely=0.0000, relwidth=0.0625, relheight=0.0714)
+        return btn
+    
 
 class Win(WinGUI):
     def __init__(self, controller):
@@ -225,6 +244,7 @@ class Win(WinGUI):
         self.tk_button_DatasetNext.bind('<Button-1>', self.ctl.on_dataset_next)
         self.tk_button_BackDoorImgPrvious.bind('<Button-1>', self.ctl.on_backdoor_img_prvious)
         self.tk_button_BackDoorImgNext.bind('<Button-1>', self.ctl.on_backdoor_img_next)
+        self.tk_button_Verify.bind('<Button-1>', self.ctl.on_verify)
 
     def __style_config(self):
         pass

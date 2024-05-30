@@ -39,6 +39,7 @@ class Controller:
         self.ModelPath = self.ui.tk_input_ModelPath.get()  # 模型路径
         self.SelectDataset = self.ui.tk_select_box_SelectDataset.get()  # 选择的数据集
         self.DatasetPath = self.ui.tk_input_DatasetPath.get()  # 数据集路径
+        self.IntervalAcc = self.ui.IntervalAcc.get()  # 间隔精度
         
     def StartDetect(self, evt):
         self.ui.tk_label_DatasetImage.config(text="毒化数据")
@@ -89,6 +90,10 @@ class Controller:
     def on_backdoor_img_next(self, event):
         self.CurrentTriggerIndex += 1
         self.show_backdoor_image()
+    
+    def on_verify(self, event):
+        model, dataset = selectModel(self.SelectModel, self.ModelPath)
+        start_GUI(self.CurrentTriggerImage, f"后门标签：{self.currentBackDoorlabel}", "后门检测系统", model, dataset, master=self.ui)
         
     def show_image(self, info_label, image_label, tensor, current_index, info=None):
         pic_num = 1
@@ -183,7 +188,7 @@ class Controller:
                 self.ui.progress_value.set((epoch + 1)/maxEpoch*100)
                 self.ui.tk_label_Process.config(text=f"{self.ui.progress_value.get():.2f}%")
                 if flag:
-                    processed_tensor = process_triggers(triggers, 0.01)  # 堆叠后的后门图像拆分出来
+                    processed_tensor = process_triggers(triggers, self.IntervalAcc)  # 堆叠后的后门图像拆分出来
                     colorPrint(f"[+] 检测到后门标签：{sorted_indices[0].item()}", "red")
                     self.currentBackDoorlabel = classes[sorted_indices[0].item()]
                     self.CurrentTriggerImage = processed_tensor
@@ -193,9 +198,10 @@ class Controller:
 
             if not flag:
                 colorPrint("[-] 未检测出后门", "green")
+                self.ui.messagebox.showinfo("未发现后门", "可以查看控制台考虑增加最大检测轮数")
             else:
-                self.ui.messagebox.showinfo("提示", "检测完成")
-                start_GUI(processed_tensor, f"后门标签：{classes[sorted_indices[0].item()]}", "后门检测系统", model, dataset, master=self.ui)
+                self.ui.messagebox.showwarning("发现后门！", f"检测完成,发现后门标签：{self.currentBackDoorlabel}")
+                # start_GUI(processed_tensor, f"后门标签：{classes[sorted_indices[0].item()]}", "后门检测系统", model, dataset, master=self.ui)
             
         except Exception as e:
             colorPrint(f"[-] 检测出异常：{e}", "red")
