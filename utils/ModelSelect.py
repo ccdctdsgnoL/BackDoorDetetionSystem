@@ -16,6 +16,7 @@ def selectModel(model_name, model_path=None):
     cifar10: CIFAR10数据集
     """
     transform = Compose([ToTensor()])
+    model_name = model_name.lower().replace("_", "")
     if model_name == "mnist":
         model=BaselineMNISTNetwork()
         mnist_dataset = torchvision.datasets.MNIST(root='./data', train=True, transform=transform, download=False)
@@ -31,7 +32,7 @@ def selectModel(model_name, model_path=None):
         elif type(model_path) == int:
             model_path=model_paths[model_path]
         return TestedModel(model, model_path, 256), mnist_dataset
-    elif model_name == "fashion_mnist":
+    elif model_name == "fashionmnist":
         model=BaselineMNISTNetwork()
         fashion_mnist_dataset = torchvision.datasets.FashionMNIST(root='./data', train=True, transform=transform, download=False)
         model_paths = [

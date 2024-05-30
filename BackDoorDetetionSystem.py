@@ -5,7 +5,7 @@
 import tkinter as tk
 from tkinter import ttk
 import threading
-from FinalVerBDDSystem import detect as backdoor_detection
+from BDDSystem import detect as backdoor_detection
 
 class NeuralNetworkBackdoorDetector:
     def __init__(self, root):

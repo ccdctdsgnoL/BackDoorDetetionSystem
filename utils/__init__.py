@@ -4,7 +4,7 @@ from .TestedModel import TestedModel
 from .ModelSelect import selectModel
 from .ColorPrint import colorPrint
 from .Timer import timer
-from .FinalVerBDDSystemGUI import start_GUI
+from .BDDSystemGUI import start_GUI
 
 __all__ = [
     'show_tensor_image', 'backDoorStyle', 'addTrigger', 'randomChoiceData', 'TestedModel', 'process_triggers', 'selectModel', 'colorPrint',
