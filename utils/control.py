@@ -48,6 +48,13 @@ class Controller:
         self.ui.tk_label_ShowBackDoorImage.config(image="")
         self.ui.progress_value.set(0)
         self.ui.tk_label_Process.config(text="进度")
+        self.CurrentTriggerImage = None
+        self.CurrentTriggerIndex = 0
+        self.currentBackDoorlabel = None
+        self.current_posion_prediction_results = None
+        self.CurrentDataSetImage = None
+        self.CurrentDatasetIndex = 0
+        self.getUIValue()
         # 创建一个新线程来执行耗时任务
         detect_thread = threading.Thread(target=self.run_detection)
         detect_thread.start()
@@ -68,6 +75,8 @@ class Controller:
             pass
     
     def show_dataset_image(self):
+        if self.CurrentDataSetImage is None:
+            return
         self.show_image(self.ui.tk_label_DatasetImage, self.ui.tk_label_ShowDatasetImage,
                         self.CurrentDataSetImage, self.CurrentDatasetIndex, self.current_posion_prediction_results)
         
@@ -80,6 +89,8 @@ class Controller:
         self.show_dataset_image()
     
     def show_backdoor_image(self):
+        if self.CurrentTriggerImage is None:
+            return
         self.show_image(self.ui.tk_label_BackDoorLabel, self.ui.tk_label_ShowBackDoorImage,
                         self.CurrentTriggerImage, self.CurrentTriggerIndex, self.currentBackDoorlabel)
     
@@ -92,6 +103,8 @@ class Controller:
         self.show_backdoor_image()
     
     def on_verify(self, event):
+        if self.CurrentTriggerImage is None:
+            return
         model, dataset = selectModel(self.SelectModel, self.ModelPath)
         start_GUI(self.CurrentTriggerImage, f"后门标签：{self.currentBackDoorlabel}", "后门检测系统", model, dataset, master=self.ui)
         
@@ -130,7 +143,14 @@ class Controller:
         image_label.image = photo
         
     def run_detection(self):
-        self.getUIValue()  # 获取UI组件的值
+        if self.ModelPath is None or self.ModelPath == "":
+            self.ui.messagebox.showerror("错误", "请填写模型路径")
+            return
+        if self.IntervalAcc < 0 or self.IntervalAcc > 1:
+            self.ui.IntervalAcc.set(0.1)
+            self.IntervalAcc = 0.1
+            self.ui.messagebox.showinfo("提示", "间隔精度范围为0-1，已自动设置为0.1")
+            return
         print(f"\n[*] 开始检测，最大检测轮数：{self.Epochs}，是否提前停止：{self.IsEarlyStop}")
         self.ui.tk_button_Start.config(text="正在检测...")
         try:
@@ -160,7 +180,8 @@ class Controller:
                 
                 diff_indices = torch.nonzero(normal_prediction_results != posion_prediction_results).squeeze()  # 获取分类改变的索引  核心代码
                 classif_chage_prob = len(diff_indices) / len(batch_x) * 100  # 计算分类改变的概率
-                colorPrint(f"[*] 分类改变个数：{len(diff_indices)}/{len(batch_x)}  分类改变概率：{classif_chage_prob:.2f}%", "blue")
+                output_info = f"[*] 分类改变个数：{len(diff_indices)}/{len(batch_x)}  分类改变概率：{classif_chage_prob:.2f}%"
+                colorPrint(output_info, "blue")
                 diff_tariggers = torch.index_select(posion_prediction_results, 0, diff_indices)  # 成功触发后被改变的标签
                 triggers = triggers.repeat(n, 1, 1, 1)
                 triggers = torch.index_select(triggers, 0, diff_indices)  # 影响到预测的后门样式
@@ -198,7 +219,7 @@ class Controller:
 
             if not flag:
                 colorPrint("[-] 未检测出后门", "green")
-                self.ui.messagebox.showinfo("未发现后门", "可以查看控制台考虑增加最大检测轮数")
+                self.ui.messagebox.showinfo("未发现后门", f"{output_info}\n可以查看控制台考虑增加最大检测轮数")
             else:
                 self.ui.messagebox.showwarning("发现后门！", f"检测完成,发现后门标签：{self.currentBackDoorlabel}")
                 # start_GUI(processed_tensor, f"后门标签：{classes[sorted_indices[0].item()]}", "后门检测系统", model, dataset, master=self.ui)

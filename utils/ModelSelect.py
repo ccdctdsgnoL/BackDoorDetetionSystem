@@ -17,6 +17,17 @@ def selectModel(model_name, model_path=None):
     """
     transform = Compose([ToTensor()])
     model_name = model_name.lower().replace("_", "")
+    if model_name == "自动选择":
+        if "fashion" in model_path.lower():
+            model_name = "fashionmnist"
+        elif "mnist" in model_path.lower():
+            model_name = "mnist"
+        elif "cifar" in model_path.lower():
+            model_name = "cifar10"
+        else:
+            raise ValueError("不在自动选择范围内")
+        print(model_name)
+        print(model_path)
     if model_name == "mnist":
         model=BaselineMNISTNetwork()
         mnist_dataset = torchvision.datasets.MNIST(root='./data', train=True, transform=transform, download=False)
