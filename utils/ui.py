@@ -20,8 +20,8 @@ class WinGUI(Tk):
         self.tk_select_box_SelectDataset = self.__tk_select_box_SelectDataset(self.tk_frame_ModelConfig) 
         self.tk_input_DatasetPath = self.__tk_input_DatasetPath(self.tk_frame_ModelConfig) 
         self.tk_check_button_EarlyStop = self.__tk_check_button_EarlyStop(self.tk_frame_ModelConfig)
-        self.tk_label_IntervalAcc = self.__tk_label_IntervalAcc( self.tk_frame_ModelConfig) 
-        self.tk_input_IntervalAcc = self.__tk_input_IntervalAcc( self.tk_frame_ModelConfig)
+        self.tk_label_IntervalAcc = self.__tk_label_IntervalAcc(self.tk_frame_ModelConfig) 
+        self.tk_input_IntervalAcc = self.__tk_input_IntervalAcc(self.tk_frame_ModelConfig)
         self.tk_label_frame_Output = self.__tk_label_frame_Output(self)
         self.tk_label_ShowBackDoorImage = self.__tk_label_ShowBackDoorImage(self.tk_label_frame_Output) 
         self.tk_label_BackDoorLabel = self.__tk_label_BackDoorLabel(self.tk_label_frame_Output) 
@@ -33,9 +33,9 @@ class WinGUI(Tk):
         self.tk_button_DatasetNext = self.__tk_button_DatasetNext(self.tk_label_frame_Output) 
         self.tk_button_BackDoorImgPrvious = self.__tk_button_BackDoorImgPrvious(self.tk_label_frame_Output) 
         self.tk_button_BackDoorImgNext = self.__tk_button_BackDoorImgNext(self.tk_label_frame_Output)
-        self.tk_button_Verify = self.__tk_button_Verify( self.tk_label_frame_Output)
+        self.tk_button_Verify = self.__tk_button_Verify(self.tk_label_frame_Output)
+        self.subwin_CustomModel = None
         self.__set_defaults()
-        self.tk_label_ShowDatasetImage.winfo_width()
 
     def __config(self):
         self.IsEarlyStop = BooleanVar(value=True)  # 是否提前停止
@@ -226,7 +226,6 @@ class WinGUI(Tk):
         btn.place(relx=0.9187, rely=0.0000, relwidth=0.0625, relheight=0.0714)
         return btn
     
-
 class Win(WinGUI):
     def __init__(self, controller):
         self.ctl = controller
@@ -248,6 +247,121 @@ class Win(WinGUI):
 
     def __style_config(self):
         pass
+    
+    def run_tk_toplevel_CustomModel(self, parent):
+        # self.tk_frame_ModelConfig
+        toplevel = SubWinGUI(self.ctl, parent)
+        print("启动自定义模型窗口")
+        return toplevel
+    
+class SubWinGUI(Toplevel):
+    def __init__(self, controller, parent):
+        super().__init__(parent)
+        self.sctl = controller
+        self.messagebox = messagebox
+        self.__win()
+        self.tk_frame_MainContainer = self.__tk_frame_MainContainer(self)
+        self.tk_label_NetModelFilePath = self.__tk_label_NetModelFilePath(self.tk_frame_MainContainer)
+        self.tk_input_NetModelFilePath = self.__tk_input_NetModelFilePath(self.tk_frame_MainContainer)
+        self.tk_button_LoadNetModelCode = self.__tk_button_LoadNetModelCode(self.tk_frame_MainContainer)
+        self.tk_label_NetModelCode = self.__tk_label_NetModelCode(self.tk_frame_MainContainer)
+        self.tk_text_NetModelCode = self.__tk_text_NetModelCode(self.tk_frame_MainContainer)
+        self.tk_label_LoadMethod = self.__tk_label_LoadMethod(self.tk_frame_MainContainer)
+        self.tk_input_LoadMethod = self.__tk_input_LoadMethod(self.tk_frame_MainContainer)
+        self.tk_button_Verify = self.__tk_button_Verify(self.tk_frame_MainContainer)
+        self.tk_button_Cancel = self.__tk_button_Cancel(self.tk_frame_MainContainer)
+        self.tk_button_Certain = self.__tk_button_Certain(self.tk_frame_MainContainer)
+        self.__event_bind()
+
+    def __win(self):
+        self.title("自定义模型配置")
+        self.minsize(width=600, height=800)
+
+    def scrollbar_autohide(self,vbar, hbar, widget):
+        """自动隐藏滚动条"""
+        def show():
+            if vbar: vbar.lift(widget)
+            if hbar: hbar.lift(widget)
+        def hide():
+            if vbar: vbar.lower(widget)
+            if hbar: hbar.lower(widget)
+        hide()
+        widget.bind("<Enter>", lambda e: show())
+        if vbar: vbar.bind("<Enter>", lambda e: show())
+        if vbar: vbar.bind("<Leave>", lambda e: hide())
+        if hbar: hbar.bind("<Enter>", lambda e: show())
+        if hbar: hbar.bind("<Leave>", lambda e: hide())
+        widget.bind("<Leave>", lambda e: hide())
+    
+    def v_scrollbar(self,vbar, widget, x, y, w, h, pw, ph):
+        widget.configure(yscrollcommand=vbar.set)
+        vbar.config(command=widget.yview)
+        vbar.place(relx=(w + x) / pw, rely=y / ph, relheight=h / ph, anchor='ne')
+    def h_scrollbar(self,hbar, widget, x, y, w, h, pw, ph):
+        widget.configure(xscrollcommand=hbar.set)
+        hbar.config(command=widget.xview)
+        hbar.place(relx=x / pw, rely=(y + h) / ph, relwidth=w / pw, anchor='sw')
+    def create_bar(self,master, widget,is_vbar,is_hbar, x, y, w, h, pw, ph):
+        vbar, hbar = None, None
+        if is_vbar:
+            vbar = Scrollbar(master)
+            self.v_scrollbar(vbar, widget, x, y, w, h, pw, ph)
+        if is_hbar:
+            hbar = Scrollbar(master, orient="horizontal")
+            self.h_scrollbar(hbar, widget, x, y, w, h, pw, ph)
+        self.scrollbar_autohide(vbar, hbar, widget)
+    def __tk_frame_MainContainer(self,parent):
+        frame = Frame(parent,)
+        frame.place(relx=0.0000, rely=0.0000, relwidth=1.0000, relheight=1.0000)
+        return frame
+    def __tk_label_NetModelFilePath(self,parent):
+        label = Label(parent,text="代码文件路径：",anchor="center", )
+        label.place(relx=0.0500, rely=0.0375, relwidth=0.1500, relheight=0.0375)
+        return label
+    def __tk_input_NetModelFilePath(self,parent):
+        ipt = Entry(parent, )
+        ipt.place(relx=0.2167, rely=0.0375, relwidth=0.6333, relheight=0.0375)
+        return ipt
+    def __tk_button_LoadNetModelCode(self,parent):
+        btn = Button(parent, text="载入", takefocus=False,)
+        btn.place(relx=0.8667, rely=0.0375, relwidth=0.0833, relheight=0.0375)
+        return btn
+    def __tk_label_NetModelCode(self,parent):
+        label = Label(parent,text="自定义模型代码",anchor="center", )
+        label.place(relx=0.4167, rely=0.1000, relwidth=0.1667, relheight=0.0375)
+        return label
+    def __tk_text_NetModelCode(self,parent):
+        text = Text(parent)
+        text.place(relx=0.0500, rely=0.1500, relwidth=0.9000, relheight=0.6875)
+        self.create_bar(parent, text,True, True, 30, 120, 540,550,600,800)
+        return text
+    def __tk_label_LoadMethod(self,parent):
+        label = Label(parent,text="加载方式",anchor="center", )
+        label.place(relx=0.0500, rely=0.8625, relwidth=0.1333, relheight=0.0375)
+        return label
+    def __tk_input_LoadMethod(self,parent):
+        ipt = Entry(parent, )
+        ipt.place(relx=0.2000, rely=0.8625, relwidth=0.6500, relheight=0.0375)
+        return ipt
+    def __tk_button_Verify(self,parent):
+        btn = Button(parent, text="测试", takefocus=False,)
+        btn.place(relx=0.8667, rely=0.8625, relwidth=0.0833, relheight=0.0375)
+        return btn
+    def __tk_button_Cancel(self,parent):
+        btn = Button(parent, text="取消", takefocus=False,)
+        btn.place(relx=0.0500, rely=0.9250, relwidth=0.0833, relheight=0.0375)
+        return btn
+    def __tk_button_Certain(self,parent):
+        btn = Button(parent, text="确定", takefocus=False,)
+        btn.place(relx=0.8667, rely=0.9250, relwidth=0.0833, relheight=0.0375)
+        return btn
+    
+    def __event_bind(self):
+        self.tk_button_LoadNetModelCode.bind('<Button-1>', self.sctl.LoadModelCodeFile)
+        self.tk_button_Verify.bind('<Button-1>', self.sctl.VerifyLoadMethod)
+        self.tk_button_Cancel.bind('<Button-1>', self.sctl.CancelLoadNetModel)
+        self.tk_button_Certain.bind('<Button-1>', self.sctl.CertainLoadNetModel)
+
 
 if __name__ == "__main__":
     win = WinGUI()

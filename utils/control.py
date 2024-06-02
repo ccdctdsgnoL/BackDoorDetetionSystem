@@ -1,6 +1,8 @@
 import torch
 import threading
 import time
+import os
+import ast
 from utils import *
 from PIL import Image, ImageTk
 from torchvision.transforms import ToPILImage
@@ -25,6 +27,15 @@ class Controller:
         self.currentBackDoorlabel = None  # 当前后门标签
         self.current_posion_prediction_results = None  # 当前毒化数据预测结果
         self.IsAccelerate = False  # 是否加速
+        self.CustomModelFilePath = None  # 自定义模型文件路径
+        self.CustomModelCode = None  # 自定义模型代码
+        self.CustomModelLoadMethod = None  # 自定义模型加载方法
+        self.IsUseCustomModel = False  # 是否使用自定义模型
+        self.CustomModel = None  # 自定义模型
+        self.CustomDatasetPath = None  # 自定义数据集路径
+        self.CurrentUseModel = None  # 当前使用的模型
+        self.CurrentUseDataset = None  # 当前使用的数据集
+        self.IsUseCustomDataset = False  # 是否使用自定义数据集
 
     
     def init(self, ui):
@@ -42,6 +53,10 @@ class Controller:
         self.SelectDataset = self.ui.tk_select_box_SelectDataset.get()  # 选择的数据集
         self.DatasetPath = self.ui.tk_input_DatasetPath.get()  # 数据集路径
         self.IntervalAcc = self.ui.IntervalAcc.get()  # 间隔精度
+        if self.IsUseCustomDataset:
+            self.CustomDatasetPath = self.ui.tk_input_DatasetPath.get()
+        else:
+            self.CustomDatasetPath = self.ui.tk_select_box_SelectDataset.get()
         
     def StartDetect(self, evt):
         self.ui.tk_label_DatasetImage.config(text="毒化数据")
@@ -57,6 +72,8 @@ class Controller:
         self.current_posion_prediction_results = None
         self.CurrentDataSetImage = None
         self.CurrentDatasetIndex = 0
+        self.CurrentUseModel = None  # 当前使用的模型
+        self.CurrentUseDataset = None  # 当前使用的数据集
         self.getUIValue()
         # 创建一个新线程来执行耗时任务
         detect_thread = threading.Thread(target=self.run_detection)
@@ -68,14 +85,23 @@ class Controller:
     def on_dataset_select(self, event):
         if self.ui.tk_select_box_SelectDataset.get() == "其他数据集":
             self.ui.tk_input_DatasetPath.place(relx=0.6750, rely=0.3333, relwidth=0.3225, relheight=0.2500)
+            self.IsUseCustomDataset = True  # 是否使用自定义数据集
         else:
+            self.IsUseCustomDataset = False  # 是否使用自定义数据集
+            self.CustomDatasetPath = self.ui.tk_select_box_SelectDataset.get()  # 自定义数据集路径
             self.ui.tk_input_DatasetPath.place_forget()
     
     def on_net_model_select(self, event):
         if self.ui.tk_select_box_SelectNetModel.get() == "自定义模型":
-            self.ui.messagebox.showinfo("提示", "暂无此功能")
+            # self.ui.messagebox.showinfo("提示", "正在完善此功能")
+            self.ui.subwin_CustomModel = self.ui.run_tk_toplevel_CustomModel(self.ui)
+            # if self.CustomModelFilePath is not None:
+            #     self.ui.subwin_CustomModel.tk_input_NetModelFilePath.set(self.CustomModelFilePath)
+            if self.CustomModelCode is not None:
+                self.ui.subwin_CustomModel.tk_text_NetModelCode.delete(1.0, "end")
+                self.ui.subwin_CustomModel.tk_text_NetModelCode.insert(1.0, self.CustomModelCode)
         else:
-            pass
+            self.IsUseCustomModel = False
     
     def show_dataset_image(self):
         if self.CurrentDataSetImage is None:
@@ -110,8 +136,7 @@ class Controller:
     def on_verify(self, event):
         if self.CurrentTriggerImage is None:
             return
-        model, dataset = selectModel(self.SelectModel, self.ModelPath)
-        start_GUI(self.CurrentTriggerImage, f"后门标签：{self.currentBackDoorlabel}", "后门检测系统", model, dataset, master=self.ui)
+        start_GUI(self.CurrentTriggerImage, f"后门标签：{self.currentBackDoorlabel}", "后门检测系统", self.CurrentUseModel, self.CurrentUseDataset, master=self.ui)
         
     def show_image(self, info_label, image_label, tensor, current_index, info=None):
         pic_num = 1
@@ -148,7 +173,10 @@ class Controller:
         self.ui.tk_button_Start.config(text="正在检测...")
         try:
             ## 选择待检测模型
-            model, dataset = selectModel(self.SelectModel, self.ModelPath)
+            model, dataset = selectModel(self.SelectModel, self.ModelPath, self.CustomModel, self.CustomDatasetPath)
+            self.CurrentUseModel = model
+            self.CurrentUseDataset = dataset
+            print(self.CurrentUseDataset)
             image_shape = dataset[0][0].shape  # 获取图像形状
             classes = dataset.classes
             self.dataset_classes = classes
@@ -232,3 +260,50 @@ class Controller:
             self.ui.messagebox.showerror("错误", f"检测时发生了错误：{e}")
         finally:
             self.ui.tk_button_Start.config(text="开始检测")
+    """
+    以下是自定义模型窗口的事件处理代码
+    self.ui.subwin_CustomModel
+    """
+    def LoadModelCodeFile(self, evt):
+        self.CustomModelFilePath = self.ui.subwin_CustomModel.tk_input_NetModelFilePath.get()
+        if os.path.exists(self.CustomModelFilePath):
+            print("载入文件：", self.CustomModelFilePath)
+            with open(self.CustomModelFilePath, "r", encoding="utf-8") as f:
+                self.CustomModelCode = f.read()
+            self.ui.subwin_CustomModel.tk_text_NetModelCode.delete(1.0, "end")
+            self.ui.subwin_CustomModel.tk_text_NetModelCode.insert(1.0, self.CustomModelCode)
+        else:
+            print(self.CustomModelFilePath, " 文件不存在")
+            self.ui.subwin_CustomModel.messagebox.showerror("错误", "文件不存在")
+        
+    def VerifyLoadMethod(self, evt):
+        print("验证加载代码")
+        print(self.ui.subwin_CustomModel.tk_input_LoadMethod.get())
+        self.CustomModelLoadMethod = self.ui.subwin_CustomModel.tk_input_LoadMethod.get()
+        
+        # 执行模型代码
+        exec(self.CustomModelCode, globals())
+        # 尝试实例化模型
+        try:
+            model = eval(self.CustomModelLoadMethod)
+            print("实例化模型：", model)
+            self.ui.subwin_CustomModel.messagebox.showinfo("模型信息", model)
+            self.CustomModel = model
+        except Exception as e:
+            print(f"实例化方法错误：{e}")
+            self.ui.subwin_CustomModel.messagebox.showerror("错误", f"实例化方法错误：{e}")
+            return
+        
+    def CancelLoadNetModel(self, evt):
+        print("取消加载模型")
+        self.CustomModelFilePath = None
+        self.CustomModelCode = None
+        self.CustomModelLoadMethod = None
+        self.IsUseCustomModel = False
+        self.CustomModel = None
+        self.ui.subwin_CustomModel.destroy()
+        
+    def CertainLoadNetModel(self, evt):
+        print("确定加载模型")
+        self.IsUseCustomModel = True
+        self.ui.subwin_CustomModel.destroy()
